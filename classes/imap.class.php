@@ -40,7 +40,7 @@ class Imap
     private $port; 
     private $tls; 
      
-    function __construct($host,$username,$password,$port=143,$tls='notls'){ 
+    function __construct($host,$username,$password,$port=993,$tls='imap/ssl'){ 
         $this->username = $username;
         $this->password = $password;
         $this->host = $host;
@@ -161,11 +161,13 @@ class Imap
                             else if($k->subtype == 'HTML'){ 
                                 $array['html'] = $this->returnBodyStr($messageNumber,'1.2'); 
                             } 
-                            else if($k->disposition == 'attachment'){ 
+							else if($k->ifdisposition===true) {
+								if($k->disposition == 'ATTACHMENT'){
                                 $attachments++; 
                             } 
                         } 
                     } 
+					}
                     else{ 
                         if($i->subtype == 'PLAIN'){ 
                             $array['plain'] = $this->returnBodyStr($messageNumber,'1'); 
@@ -173,22 +175,26 @@ class Imap
                         else if($i->subtype == 'HTML'){ 
                             $array['html'] = $this->returnBodyStr($messageNumber,'2'); 
                         } 
-                        else if($i->disposition == 'attachment'){ 
+                        else if($i->ifdisposition===true) {
+							if($i->disposition == 'ATTACHMENT'){
                             $attachments++; 
                             $array['attachments'][] = array('type'=>$i->subtype,'bytes'=>$i->bytes,'name'=>$i->parameters[0]->value,'part'=>"2"); 
                         } 
                     } 
                 } 
+				}
                  
                 if(isset($attachments) && $attachments > 1){ 
                     $array['attachments'] = array(); 
                     foreach($o->parts as $x => $i) 
                     { 
-                        if($i->disposition == 'attachment') 
-                        { 
-                            $part = $x+1; 
-                            $array['attachments'][] = array('type'=>$i->subtype,'bytes'=>$i->bytes,'name'=>$i->parameters[0]->value,'part'=>$part,'msgno'=>$messageNumber); 
-                        } 
+                        if($i->ifdisposition===true) {
+                            if($i->disposition == 'ATTACHMENT') 
+                            { 
+                                $part = $x+1; 
+                                $array['attachments'][] = array('type'=>$i->subtype,'bytes'=>$i->bytes,'name'=>$i->parameters[0]->value,'part'=>$part,'msgno'=>$messageNumber); 
+                            }
+                        }  
                     } 
                 } 
             } 
